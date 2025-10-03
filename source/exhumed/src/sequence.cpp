@@ -33,6 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "init.h"
 #include "light.h"
 #include "baselayer.h"
+#include "status.h"
 #ifndef __WATCOMC__
 #include <cstring>
 #include <cstdio> // for printf
@@ -41,13 +42,20 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <stdio.h>
 #endif
 
+#include <sstream>
+#include <fstream>
+#include <vector>
+
 // TEMP
 #include <assert.h>
+#include "names.h"
 
 #define kMaxSequences	4096
 #define kMaxSEQFiles	78
 #define kMaxSEQFrames	18000
 #define kMaxSEQChunks	21000
+
+char seq_dir[BMAX_PATH] = "seqs";
 
 short sequences = 0;
 short frames = 0;
@@ -161,12 +169,74 @@ const char *SeqNames[kMaxSEQFiles] =
 short SeqOffsets[kMaxSEQFiles];
 
 
+static char *getDecompiledSeqPath(const char *filename)
+{
+    char fn[BMAX_PATH];
+
+    if (seq_dir[0] != 0)
+    {
+        struct Bstat st;
+        if (!Bstat(seq_dir, &st) && ((st.st_mode & S_IFMT) == S_IFDIR))
+            Bsnprintf(fn, sizeof(fn), "%s/%s", seq_dir, filename);
+        else if (buildvfs_mkdir(seq_dir, S_IRWXU) == 0)
+        {
+#ifndef NDEBUG
+            OSD_Printf("Directory \"%s\" created successfully!\n", seq_dir);
+#endif
+            Bsnprintf(fn, sizeof(fn), "%s/%s", seq_dir, filename);
+        }
+        else
+        {
+            OSD_Printf("Failed to create directory \"%s\", using root.\n", seq_dir);
+            Bsnprintf(fn, sizeof(fn), "%s", filename);
+        }
+    }
+    else
+        Bsnprintf(fn, sizeof(fn), "%s", filename);
+
+    char *ret = Xstrdup(fn);
+
+    return ret;
+}
+
+static std::string joinStrArr(std::vector<std::string> strArr)
+{
+    if (strArr.empty())
+    {
+        return "none";
+    }
+
+    bool isFirst = true;
+    std::stringstream joinedStr;
+
+    for (int i = 0; i < strArr.size(); i++)
+    {
+        if (isFirst)
+            isFirst = false;
+        else
+            joinedStr << ",";
+
+        joinedStr << strArr.at(i);
+    }
+
+    return joinedStr.str();
+}
+
 int seq_ReadSequence(const char *seqName)
 {
     int i;
     char buffer[BMAX_PATH];
     buffer[0] = '\0';
+    /*
+    char textBuffer[BMAX_PATH];
+    textBuffer[0] = '\0';
+    strcat(textBuffer, seqName);
+    strcat(textBuffer, ".txt");
 
+    const char *seqTextFilePath = getDecompiledSeqPath(textBuffer);
+
+    std::ofstream seqText(seqTextFilePath);
+    */
     strcat(buffer, seqName);
     strcat(buffer, ".seq");
 
@@ -261,7 +331,8 @@ int seq_ReadSequence(const char *seqName)
         FrameSize[frames + i] = B_LITTLE16(FrameSize[frames + i]);
         FrameFlag[frames + i] = B_LITTLE16(FrameFlag[frames + i]);
 #endif
-        FrameBase[frames + i] += chunks;
+        int frameIndex = frames + i;
+        FrameBase[frameIndex] += chunks;
     }
 
     int16_t nChunks;
@@ -296,16 +367,38 @@ int seq_ReadSequence(const char *seqName)
         ChunkPict[chunks + i] = B_LITTLE16(ChunkPict[chunks + i]);
         ChunkFlag[chunks + i] = B_LITTLE16(ChunkFlag[chunks + i]);
 #endif
-        ChunkXpos[chunks + i] -= centerx;
-        ChunkYpos[chunks + i] -= centery;
+        int chunkIndex = chunks + i;
+        short nTile = ChunkPict[chunkIndex];
 
-        short nTile = ChunkPict[chunks + i];
+        /*
+        std::vector<std::string> flagArr;
+
+        if (ChunkFlag[chunkIndex] & 1)
+            flagArr.push_back("flipX");
+
+        if (ChunkFlag[chunkIndex] & 2)
+            flagArr.push_back("flipY");
+
+        seqText << "chunk " << chunkIndex << ": {\n";
+        seqText << "\txPos: " << ChunkXpos[chunkIndex] << "\n";
+        seqText << "\tyPos: " << ChunkYpos[chunkIndex] << "\n";
+        seqText << "\ttile: " << nTile << "\n";
+        seqText << "\tflags: " << joinStrArr(flagArr) << "\n";
+        seqText << "}\n";
+        */
+
+        ChunkXpos[chunkIndex] -= centerx;
+        ChunkYpos[chunkIndex] -= centery;
+
         if (waloff[nTile] == 0)
         {
             tileLoad(nTile);
         }
     }
-
+    /*
+    seqText << std::endl;
+    seqText.close();
+    */
     sequences += nSeqs;
     FrameBase[frames + nFrames] = chunks + nChunks;
     frames += nFrames;
@@ -475,12 +568,38 @@ void seq_DrawPilotLightSeq(int xOffset, int yOffset)
 
 */
 
-int seq_DrawGunSequence(int nSeqOffset, short dx, int xOffs, int yOffs, int nShade, int nPal)
+const static unsigned char LAST_FRAMES_LEN = 5;
+short lastNFrameBases[LAST_FRAMES_LEN];
+
+static bool isEqualToLast5Frames(short nFrameBase)
 {
-    short nFrame = SeqBase[nSeqOffset] + dx;
+    for (unsigned char i = 0; i < LAST_FRAMES_LEN; i++)
+        if (nFrameBase == lastNFrameBases[i])
+            return true;
+
+    return false;
+}
+
+static void updateLastNFrames(short nFrameBase)
+{
+    for (unsigned char i = LAST_FRAMES_LEN - 1; i > 0; i--) lastNFrameBases[i] = lastNFrameBases[i - 1];
+    lastNFrameBases[0] = nFrameBase;
+}
+
+const static unsigned char STATUS_Y_OFFSET_INCREMENT = 24;
+static int statusYOffs = 0;
+
+void setStatusYOffset(int newStatusYOffs)
+{
+    statusYOffs = newStatusYOffs;
+}
+
+int seq_DrawGunSequence(int nSeqOffset, short dx, int xOffs, int yOffs, int nShade, int nPal, bool takeScreenshot)
+{
+    short nFrame     = SeqBase[nSeqOffset] + dx;
     short nFrameBase = FrameBase[nFrame];
     short nFrameSize = FrameSize[nFrame];
-    short frameFlag = FrameFlag[nFrame];
+    short frameFlag  = FrameFlag[nFrame];
 
     while (1)
     {
@@ -492,25 +611,35 @@ int seq_DrawGunSequence(int nSeqOffset, short dx, int xOffs, int yOffs, int nSha
         int x = ChunkXpos[nFrameBase] + 160;
         int y = ChunkYpos[nFrameBase] + 100;
 
-        if (ChunkFlag[nFrameBase] & 1) {
+        if (ChunkFlag[nFrameBase] & 1)
             nStat = 11;
-        }
 
-        if (ChunkFlag[nFrameBase] & 2) {
+        if (ChunkFlag[nFrameBase] & 2)
             nStat |= 0x10;
-        }
 
         short nTile = ChunkPict[nFrameBase];
 
-        if (frameFlag & 4) {
+        if (frameFlag & 4)
             nShade = -100;
-        }
 
-        if (nPlayerInvisible[nLocalPlayer]) {
+        if (nPlayerInvisible[nLocalPlayer])
             nStat |= 0x4;
-        }
 
+        //std::stringstream ss;
+        //ss << "tile: " << nTile << ", frame: " << nFrameBase << " (x: " << x << ", y: " << y << ")";
+
+        //DrawStatusMessage(ss.str().c_str(), statusYOffs);
         overwritesprite(x + xOffs, y + yOffs, nTile, nShade, nStat, nPal);
+        //setStatusYOffset(statusYOffs + STATUS_Y_OFFSET_INCREMENT);
+
+        //if (takeScreenshot && nFrameSize == 0 && !isEqualToLast5Frames(nFrameBase))
+        //{
+        //    updateLastNFrames(nFrameBase);
+
+        //    static const char *fn = "capt0000.png";
+        //    videoCaptureScreen(fn, 0);
+        //}
+
         nFrameBase++;
     }
 

@@ -1073,22 +1073,30 @@ void DrawWeapons(int smooth)
         nShade = sprite[PlayerList[nLocalPlayer].nSprite].shade;
     }
 
-    seq_DrawGunSequence(var_28, PlayerList[nLocalPlayer].nWeaponFrame, xOffset, yOffset, nShade, nPal);
+    bool isM60NotSelected = nWeapon != kWeaponM60;
+    int  nClip         = nPlayerClip[nLocalPlayer];
+    int  hasNoAmmo     = nClip <= 0;
+    bool var_34Check   = var_34 != 0 && var_34 != 1 && var_34 != 2 && var_34 != 5;
+    seq_DrawGunSequence(var_28, PlayerList[nLocalPlayer].nWeaponFrame, xOffset, yOffset, nShade, nPal, isM60NotSelected || (hasNoAmmo || var_34Check));
 
-    if (nWeapon != kWeaponM60)
+    if (isM60NotSelected)
+    {
+        setStatusYOffset(0);
         return;
+    }
 
     switch (var_34)
     {
         default:
+            setStatusYOffset(0);
             return;
 
         case 0:
         {
-            int nClip = nPlayerClip[nLocalPlayer];
-
-            if (nClip <= 0)
+            if (hasNoAmmo) {
+                setStatusYOffset(0);
                 return;
+            }
 
             int nSeqOffset;
 
@@ -1109,83 +1117,96 @@ void DrawWeapons(int smooth)
                 nSeqOffset = var_30 + 4;
             }
 
-            seq_DrawGunSequence(nSeqOffset, PlayerList[nLocalPlayer].nWeaponFrame, xOffset, yOffset, nShade, nPal);
+            seq_DrawGunSequence(nSeqOffset, PlayerList[nLocalPlayer].nWeaponFrame, xOffset, yOffset, nShade, nPal, true);
+            setStatusYOffset(0);
             return;
         }
         case 1:
         {
-            int nClip = nPlayerClip[nLocalPlayer];
-
             short edx = (nClip % 3) * 4;
 
-            if (nClip <= 0) {
+            if (hasNoAmmo) {
+                setStatusYOffset(0);
                 return;
             }
 
-            seq_DrawGunSequence(var_30 + 8, edx, xOffset, yOffset, nShade, nPal);
+            bool threeOrLessAmmo = nClip <= 3;
+            seq_DrawGunSequence(var_30 + 8, edx, xOffset, yOffset, nShade, nPal, threeOrLessAmmo);
 
-            if (nClip <= 3) {
+            if (threeOrLessAmmo) {
+                setStatusYOffset(0);
                 return;
             }
 
-            seq_DrawGunSequence(var_30 + 9, edx, xOffset, yOffset, nShade, nPal);
+            bool sixOrLessAmmo = nClip <= 6;
+            seq_DrawGunSequence(var_30 + 9, edx, xOffset, yOffset, nShade, nPal, sixOrLessAmmo);
 
-            if (nClip <= 6) {
+            if (sixOrLessAmmo) {
+                setStatusYOffset(0);
                 return;
             }
 
-            seq_DrawGunSequence(var_30 + 10, edx, xOffset, yOffset, nShade, nPal);
+            bool twentyFiveOrLessAmmo = nClip <= 25;
+            seq_DrawGunSequence(var_30 + 10, edx, xOffset, yOffset, nShade, nPal, twentyFiveOrLessAmmo);
 
-            if (nClip <= 25) {
+            if (twentyFiveOrLessAmmo) {
+                setStatusYOffset(0);
                 return;
             }
 
-            seq_DrawGunSequence(var_30 + 11, edx, xOffset, yOffset, nShade, nPal);
+            seq_DrawGunSequence(var_30 + 11, edx, xOffset, yOffset, nShade, nPal, true);
+            setStatusYOffset(0);
             return;
         }
         case 2:
         {
-            int nClip = nPlayerClip[nLocalPlayer];
-
             short dx = PlayerList[nLocalPlayer].nWeaponFrame;
 
-            if (nClip <= 0) {
+            if (hasNoAmmo) {
+                setStatusYOffset(0);
                 return;
             }
 
-            seq_DrawGunSequence(var_30 + 8, dx, xOffset, yOffset, nShade, nPal);
+            bool threeOrLessAmmo = nClip <= 3;
+            seq_DrawGunSequence(var_30 + 8, dx, xOffset, yOffset, nShade, nPal, threeOrLessAmmo);
 
-            if (nClip <= 3) {
+            if (threeOrLessAmmo) {
+                setStatusYOffset(0);
                 return;
             }
 
-            seq_DrawGunSequence(var_30 + 9, dx, xOffset, yOffset, nShade, nPal);
+            bool sixOrLessAmmo = nClip <= 6;
+            seq_DrawGunSequence(var_30 + 9, dx, xOffset, yOffset, nShade, nPal, sixOrLessAmmo);
 
-            if (nClip <= 6) {
+            if (sixOrLessAmmo) {
+                setStatusYOffset(0);
                 return;
             }
 
-            seq_DrawGunSequence(var_30 + 10, dx, xOffset, yOffset, nShade, nPal);
+            bool twentyFiveOrLessAmmo = nClip <= 25;
+            seq_DrawGunSequence(var_30 + 10, dx, xOffset, yOffset, nShade, nPal, twentyFiveOrLessAmmo);
 
-            if (nClip <= 25) {
+            if (twentyFiveOrLessAmmo) {
+                setStatusYOffset(0);
                 return;
             }
 
-            seq_DrawGunSequence(var_30 + 11, dx, xOffset, yOffset, nShade, nPal);
+            seq_DrawGunSequence(var_30 + 11, dx, xOffset, yOffset, nShade, nPal, true);
+            setStatusYOffset(0);
             return;
         }
 
         case 3:
         case 4:
+            setStatusYOffset(0);
             return;
 
         case 5:
         {
-            int nClip = nPlayerClip[nLocalPlayer];
-
             short ax = PlayerList[nLocalPlayer].nWeaponFrame;
 
-            if (nClip <= 0) {
+            if (hasNoAmmo) {
+                setStatusYOffset(0);
                 return;
             }
 
@@ -1208,7 +1229,8 @@ void DrawWeapons(int smooth)
                 nSeqOffset = var_30 + 17;
             }
 
-            seq_DrawGunSequence(nSeqOffset, ax, xOffset, yOffset, nShade, nPal);
+            seq_DrawGunSequence(nSeqOffset, ax, xOffset, yOffset, nShade, nPal, true);
+            setStatusYOffset(0);
             return;
         }
     }

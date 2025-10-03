@@ -36,7 +36,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "sequence.h"
 #include "random.h"
 #include "save.h"
+#include "status.h"
 #include <assert.h>
+#include "names.h"
+#include <sstream>
 
 struct Grenade
 {
@@ -265,6 +268,25 @@ void ExplodeGrenade(int nGrenade)
     DestroyGrenade(nGrenade);
 }
 
+const static unsigned char LAST_Z_COUNT = 3;
+int lastZ[LAST_Z_COUNT];
+
+static bool isEqualToLastZ(int z)
+{
+    for (unsigned char i = 0; i < LAST_Z_COUNT; i++)
+        if (z == lastZ[i])
+            return true;
+
+    return false;
+}
+
+static void updateLastZ(int z)
+{
+    for (unsigned char i = LAST_Z_COUNT - 1; i > 0; i--) lastZ[i] = lastZ[i - 1];
+    lastZ[0] = z;
+}
+
+
 void FuncGrenade(int a, int UNUSED(nDamage), int nRun)
 {
     int nGrenade = RunData[nRun].nVal;
@@ -364,9 +386,20 @@ void FuncGrenade(int a, int UNUSED(nDamage), int nRun)
                 }
 
                 int zVel = sprite[nGrenadeSprite].zvel;
+                int oldZ = sprite[nGrenadeSprite].z;
 
                 Gravity(nGrenadeSprite);
                 int nMov = movesprite(nGrenadeSprite, GrenadeList[nGrenade].x, GrenadeList[nGrenade].y, sprite[nGrenadeSprite].zvel, sprite[nGrenadeSprite].clipdist >> 1, sprite[nGrenadeSprite].clipdist >> 1, CLIPMASK1);
+                int newZ = sprite[nGrenadeSprite].z;
+
+                if (!isEqualToLastZ(newZ))
+                {
+                    std::stringstream ss;
+                    ss << "(xVel, yVel, zVel) = (" << GrenadeList[nGrenade].x << ", " << GrenadeList[nGrenade].y << ", " << newZ - oldZ << ")";
+
+                    updateLastZ(newZ);
+                    DebugOut(ss.str().c_str());
+                }
 
                 if (!nMov)
                     return;

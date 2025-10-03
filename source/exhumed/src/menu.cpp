@@ -903,8 +903,9 @@ void menu_AdjustVolume()
             (MusicVolume >> 1) - 93, // ebx. must be x???
             -22,
             0,
-            0);
-
+            0,
+            false);
+        setStatusYOffset(0);
         overwritesprite(80, 110, kMenuSoundFxTile, (Sin((int)totalclock << 4) >> 9) * (nOption == 1), 2, kPalNormal);
         overwritesprite(55, 135, kMenuBlankTitleTile, 0, 2, kPalNormal);
 
@@ -914,8 +915,9 @@ void menu_AdjustVolume()
             (FXVolume / 2) - 93,
             38,
             0,
-            0);
-
+            0,
+            false);
+        setStatusYOffset(0);
         int y = (60 * nOption) + 38;
 
         overwritesprite(60,  y, kMenuCursorTile, 0, 2, kPalNormal);

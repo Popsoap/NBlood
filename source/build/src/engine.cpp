@@ -287,6 +287,10 @@ static classicht_t *globalht;
 static uint8_t *reachablesectors;
 int16_t wallsect[MAXWALLS];
 
+int32_t getBeforeDrawRooms() {
+    return beforedrawrooms;
+}
+
 void initcrc16()
 {
     int i, j, k, a;

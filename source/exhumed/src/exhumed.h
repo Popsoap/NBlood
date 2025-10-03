@@ -99,6 +99,7 @@ struct demo_input
     uint8_t i;
     uint8_t pad[11];
 };
+
 #pragma pack(pop)
 
 void ExitGame();

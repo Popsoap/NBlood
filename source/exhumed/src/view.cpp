@@ -447,20 +447,8 @@ void viewDo3rdPerson(int nSprite, vec3_t* v, short* nSector, short nAngle, int h
     sp->cstat = bakcstat;
 }
 
-void DrawView(int smoothRatio)
+void RenderMessageAndBackground()
 {
-    int playerX;
-    int playerY;
-    int playerZ;
-    short nSector;
-    fix16_t nAngle;
-    fix16_t pan;
-
-    fix16_t nCameraa;
-    fix16_t nCamerapan;
-
-    int viewz;
-
 #if 0
     if (bgpages <= 0)
     {
@@ -479,6 +467,24 @@ void DrawView(int smoothRatio)
     FlushMessageLine();
     RefreshBackground();
 #endif
+}
+
+
+void DrawView(int smoothRatio)
+{
+    int playerX;
+    int playerY;
+    int playerZ;
+    short nSector;
+    fix16_t nAngle;
+    fix16_t pan;
+
+    fix16_t nCameraa;
+    fix16_t nCamerapan;
+
+    int viewz;
+
+    RenderMessageAndBackground();
 
     if (!bFullScreen) {
         MaskStatus();
@@ -718,13 +724,13 @@ void DrawView(int smoothRatio)
         {
             if (nSnakeCam < 0)
             {
+                DrawStatus();
                 DrawWeapons(smoothRatio);
                 if (gShowCrosshair) {
                     if (!waloff[kTile1579]) tileLoad(kTile1579);
                     rotatesprite(160<<16, 92<<16, 65536, 0, kTile1579, 0, 0, 1+2, windowxy1.x, windowxy1.y, windowxy2.x, windowxy2.y);
                 }
                 DrawMap();
-                DrawStatus();
             }
             else
             {

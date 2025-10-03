@@ -1668,8 +1668,8 @@ int32_t md_definehud (int32_t modelid, int32_t tilex, vec3f_t add,
                       int32_t angadd, int32_t flags, int32_t fov);
 int32_t md_undefinetile(int32_t tile);
 int32_t md_undefinemodel(int32_t modelid);
-
 int32_t loaddefinitionsfile(const char *fn);
+int32_t getBeforeDrawRooms();
 
 // if loadboard() fails with -2 return, try loadoldboard(). if it fails with
 // -2, board is dodgy

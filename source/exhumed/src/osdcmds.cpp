@@ -444,9 +444,7 @@ static int osdcmd_screenshot(osdcmdptr_t parm)
 //    KB_ClearKeysDown();
     static const char *fn = "capt0000.png";
 
-    if (parm->numparms == 1 && !Bstrcasecmp(parm->parms[0], "tga"))
-        videoCaptureScreenTGA(fn, 0);
-    else videoCaptureScreen(fn, 0);
+    videoCaptureScreen(fn, 0);
 
     return OSDCMD_OK;
 }

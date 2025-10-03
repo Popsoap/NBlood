@@ -81,6 +81,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <ctype.h>
 #include <time.h>
 #include <assert.h>
+#include <sstream>
 
 #ifdef _WIN32
 # include "winbits.h"
@@ -2725,6 +2726,22 @@ LOOP3:
             {
                 GameDisplay();
                 frameJustDrawn = true;
+
+                /*
+                while (!screenshot_queue.empty())
+                {
+                    const screenshot_weapon_data data = screenshot_queue.front();
+                    screenshot_queue.pop();
+
+                    std::stringstream ss;
+                    ss << "tile: " << data.nTile << ", frame: " << data.nFrameBase << " (x: " << data.x << ", y: " << data.y << ")";
+                    StatusMessage(300, ss.str().c_str());
+                    overwritesprite(data.x + data.xOffs, data.y + data.yOffs, data.nTile, data.nShade, data.nStat, data.nPal);
+
+                    static const char *fn = "capt0000.png";
+                    videoCaptureScreen(fn, 0);
+                }
+                */
             }
         }
         if (!bInDemo)

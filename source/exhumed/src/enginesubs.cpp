@@ -22,6 +22,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //-------------------------------------------------------------------------
 
 #include "engine.h"
+#include "exhumed.h"
+#include <sstream>
 
 //#include <io.h>
 //#include <fcntl.h>
@@ -55,8 +57,9 @@ void overwritesprite(int thex, int they, short tilenum, signed char shade, char 
         offy += tilesiz[tilenum].y;
     thex += offx;
     they += offy;
+    int32_t statCalc = 16 + (stat & 2) + ((stat & 4) >> 2) + (((stat & 16) >> 2) ^ ((stat & 8) >> 1));
     rotatesprite(thex << 16, they << 16, 65536L, (stat & 8) << 7, tilenum, shade, dapalnum,
-        16 + (stat & 2) + ((stat & 4) >> 2) + (((stat & 16) >> 2) ^ ((stat & 8) >> 1)),
+        statCalc,
         windowxy1.x, windowxy1.y, windowxy2.x, windowxy2.y);
     picanm[tilenum].sf = animbak;
 }
@@ -136,6 +139,24 @@ void printext(int x, int y, const char *buffer, short tilenum)
         ch = (unsigned char)buffer[i];
         rotatesprite(x - ((ch & 15) << (3 + 16)), y - ((ch >> 4) << (3 + 16)), 65536L, 0, tilenum, 0, 0, 2 + 8 + 16 + 128, xdim_from_320_16(x), ydim_from_200_16(y),
             xdim_from_320_16(x + (8 << 16)) - 1, ydim_from_200_16(y + (8 << 16)) - 1);
+
+        x += (8 << 16);
+    }
+}
+
+void printext2(int x, int y, const char *buffer, short tilenum)
+{
+    int i;
+    unsigned char ch;
+
+    x = xdim_to_320_16(x);
+    y = ydim_to_200_16(y);
+
+    for (i = 0; buffer[i] != 0; i++)
+    {
+        ch = (unsigned char)buffer[i];
+        rotatesprite(x - ((ch & 15) << (3 + 16)), y - ((ch >> 4) << (3 + 16)), 65536L, 0, tilenum, 0, 0, 2 + 8 + 16, xdim_from_320_16(x), ydim_from_200_16(y),
+                     xdim_from_320_16(x + (8 << 16)) - 1, ydim_from_200_16(y + (8 << 16)) - 1);
 
         x += (8 << 16);
     }

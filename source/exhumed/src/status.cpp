@@ -858,6 +858,16 @@ void DrawStatus()
     }
 }
 
+void DrawStatusMessage(const char *message)
+{
+    DrawStatusMessage(message, 4);
+}
+
+void DrawStatusMessage(const char *message, int y)
+{
+    printext2(0, y, message, kTileFont);
+}
+
 class StatusLoadSave : public LoadSave
 {
 public:
